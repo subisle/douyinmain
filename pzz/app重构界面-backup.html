@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鹏仔数据 - 新版重构</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #6366f1;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --gold: #f59e0b;
+            --silver: #9ca3af;
+            --bronze: #b45309;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { background-color: #e5e7eb; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+
+        .app-container {
+            width: 100%;
+            max-width: 414px;
+            background-color: var(--bg);
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 40px 20px 20px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .header-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-circle {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .app-title-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .app-title { 
+            font-size: 20px; 
+            font-weight: 700; 
+        }
+        
+        .app-subtitle {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .header-icon:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .header-icon.duration-icon {
+            color: #FFD700;
+        }
+        
+        .date-picker { 
+            background: rgba(255,255,255,0.2); 
+            padding: 5px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            backdrop-filter: blur(5px); 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer;
+        }
+        
+        .date-range-picker {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        
+        .date-range-text {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        /* 核心统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.15);
+            padding: 12px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .stat-label { font-size: 12px; opacity: 0.9; margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 800; }
+        .stat-trend { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .trend-up { color: #d1fae5; }
+        .trend-down { color: #fecaca; }
+
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        /* 分段控制器 */
+        .segment-control {
+            background: #e5e7eb;
+            border-radius: 12px;
+            padding: 4px;
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .segment-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-sub);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .segment-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* 性别筛选器 */
+        .gender-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .gender-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1.5px solid #e5e7eb;
+            background: white;
+            color: var(--text-sub);
+            transition: all 0.2s;
+        }
+        
+        .gender-chip.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
+        /* 列表项样式 */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        .streamer-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .streamer-card:active { transform: scale(0.98); }
+
+        .rank {
+            font-size: 16px;
+            font-weight: 800;
+            width: 30px;
+            color: var(--text-sub);
+            text-align: center;
+        }
+        
+        .rank-1 { color: var(--gold); }
+        .rank-2 { color: var(--silver); }
+        .rank-3 { color: var(--bronze); }
+
+        .info { flex: 1; padding-left: 10px; }
+        .name { font-weight: 600; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 6px;}
+        .id-tag { font-size: 10px; color: var(--text-sub); background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+        
+        .metric-box { text-align: right; }
+        .metric-main { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .metric-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+        
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        }
+        .status-live { background-color: var(--primary); box-shadow: 0 0 6px var(--primary); }
+        .status-off { background-color: #d1d5db; }
+
+        /* FAB菜单 */
+        .fab-menu {
+            position: absolute;
+            bottom: 90px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        
+        .fab-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        
+        .fab-menu.open .fab-option {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .fab-label {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            white-space: nowrap;
+        }
+        
+        .fab-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .fab-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .fab-main {
+            width: 56px;
+            height: 56px;
+            font-size: 20px;
+        }
+        
+        .fab-main.open {
+            transform: rotate(45deg);
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            padding: 12px 20px 24px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #f3f4f6;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-sub);
+            font-size: 10px;
+            gap: 4px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 20px; }
+
+        /* 模态对话框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+        
+        .modal-content {
+            margin-bottom: 20px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: var(--text-main);
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        /* 预览列表 */
+        .preview-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 16px 0;
+        }
+        
+        .preview-item {
+            padding: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+        
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 动态类：根据模式改变颜色 */
+        .mode-duration .metric-main { color: var(--secondary); }
+        .mode-duration .header { background: var(--secondary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
+        .mode-duration .fab-btn { background: var(--secondary); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+        .mode-duration .segment-btn.active { color: var(--secondary); }
+        .mode-duration .nav-item.active { color: var(--secondary); }
+
+        /* 隐藏类 */
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="app">
+        <!-- 主界面 -->
+        <div id="main-screen">
+            <div class="header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <div class="logo-circle">鹏</div>
+                        <div class="app-title-group">
+                            <div class="app-title">鹏仔数据</div>
+                            <div class="app-subtitle">主播管理系统</div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-icon" onclick="makeCall()" title="拨打电话">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="header-icon" onclick="showScreen('streamer')" title="主播管理">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="header-icon" onclick="showScreen('settings')" title="设置">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="date-picker" onclick="showDatePicker()">
+                    <i class="far fa-calendar-alt"></i>
+                    <span id="current-date">2026-01-19</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">今日总音浪</div>
+                        <div class="stat-value" id="total-sound">526.8万</div>
+                        <div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 12.5%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">今日开播/总数</div>
+                        <div class="stat-value" id="live-count">28 / 33</div>
+                        <div class="stat-trend trend-up"><i class="fas fa-user-check"></i> 85% 开播率</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="segment-control">
+                    <div class="segment-btn active" onclick="switchMode('sound')" id="btn-sound">音浪业绩</div>
+                    <div class="segment-btn" onclick="switchMode('duration')" id="btn-duration">时长考勤</div>
+                </div>
+
+                <div class="list-header">
+                    <span>排名 / 主播</span>
+                    <span id="col-header-right">音浪收入</span>
+                </div>
+
+                <div id="streamer-list"></div>
+            </div>
+
+            <!-- FAB菜单 -->
+            <div class="fab-menu" id="fab-menu">
+                <div class="fab-option" style="transition-delay: 0.1s;">
+                    <div class="fab-label">导入数据</div>
+                    <div class="fab-btn" onclick="importData()">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                </div>
+                <div class="fab-option" style="transition-delay: 0.05s;">
+                    <div class="fab-label">刷新数据</div>
+                    <div class="fab-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                </div>
+                <div class="fab-option">
+                    <div class="fab-label">导出报表</div>
+                    <div class="fab-btn" onclick="showExportDialog()">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                </div>
+                <div class="fab-btn fab-main" onclick="toggleFabMenu()">
+                    <i class="fas fa-plus"></i>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item active" onclick="showScreen('main')">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>数据看板</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('streamer')">
+                    <i class="fas fa-users"></i>
+                    <span>主播管理</span>
+                </div>
+                <div class="nav-item" onclick="syncData()">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>同步</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('settings')">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 直播时长界面 -->
+        <div id="duration-screen" class="hidden">
+            <div class="header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <div class="header-icon" onclick="showScreen('main')">
+                            <i class="fas fa-arrow-left"></i>
+                        </div>
+                        <div class="app-title-group">
+                            <div class="app-title">直播有效时长</div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-icon" onclick="showExportDialog()">
+                            <i class="fas fa-file-export"></i>
+                        </div>
+                        <div class="header-icon" onclick="importDurationData()">
+                            <i class="fas fa-file-import"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="date-range-picker" onclick="showDateRangePicker()">
+                    <div class="date-range-text">
+                        <i class="far fa-calendar-alt"></i>
+                        <span id="date-range">2026-01-01 ~ 2026-01-18</span>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">总人数</div>
+                        <div class="stat-value">33</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">有时长 / 未开播</div>
+                        <div class="stat-value">28 / 5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="gender-filter">
+                    <div class="gender-chip active" onclick="filterGender('all')">全部</div>
+                    <div class="gender-chip" onclick="filterGender('male')">男</div>
+                    <div class="gender-chip" onclick="filterGender('female')">女</div>
+                </div>
+
+                <div class="list-header">
+                    <span>排名 / 主播</span>
+                    <span>有效时长</span>
+                </div>
+
+                <div id="duration-list"></div>
+            </div>
+        </div>
+
+        <!-- 主播管理界面 -->
+        <div id="streamer-screen" class="hidden">
+            <div class="header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <div class="header-icon" onclick="showScreen('main')">
+                            <i class="fas fa-arrow-left"></i>
+                        </div>
+                        <div class="app-title-group">
+                            <div class="app-title">主播管理</div>
+                            <div class="app-subtitle">共 101 位主播</div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-icon" onclick="syncStreamers()">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <div class="header-icon" onclick="addStreamer()">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="streamer-management-list"></div>
+            </div>
+        </div>
+
+        <!-- 设置界面 -->
+        <div id="settings-screen" class="hidden">
+            <div class="header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <div class="header-icon" onclick="showScreen('main')">
+                            <i class="fas fa-arrow-left"></i>
+                        </div>
+                        <div class="app-title-group">
+                            <div class="app-title">系统设置</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="streamer-card">
+                    <div class="info">
+                        <div class="name">删除指定日期数据</div>
+                        <div class="id-tag">清理历史数据</div>
+                    </div>
+                    <div class="header-icon" onclick="deleteDate()">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+                
+                <div class="streamer-card">
+                    <div class="info">
+                        <div class="name">清空本地数据</div>
+                        <div class="id-tag">删除所有本地数据库数据</div>
+                    </div>
+                    <div class="header-icon" onclick="clearAllData()">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                </div>
+                
+                <div class="streamer-card">
+                    <div class="info">
+                        <div class="name">同步主播数据</div>
+                        <div class="id-tag">最后同步：2026-01-19 14:30</div>
+                    </div>
+                    <div class="header-icon" onclick="syncStreamers()">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                </div>
+                
+                <div class="streamer-card">
+                    <div class="info">
+                        <div class="name">关于应用</div>
+                        <div class="id-tag">版本 v2.0 | 联系电话：13354463148</div>
+                    </div>
+                    <div class="header-icon" onclick="makeCall()">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导入预览对话框 -->
+        <div class="modal-overlay" id="import-preview-modal">
+            <div class="modal">
+                <div class="modal-header">导入预览</div>
+                <div class="modal-content">
+                    <div style="margin-bottom: 12px;">
+                        <strong>日期：</strong><span id="preview-date">2026-01-19</span>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <strong>将导入：</strong><span id="preview-count">101</span>条
+                    </div>
+                    <div class="preview-list" id="preview-list">
+                        <!-- 预览数据将在这里显示 -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('import-preview-modal')">取消</button>
+                    <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时长导入预览对话框（带性别筛选） -->
+        <div class="modal-overlay" id="duration-import-modal">
+            <div class="modal">
+                <div class="modal-header">导入预览</div>
+                <div class="modal-content">
+                    <div style="margin-bottom: 12px;">
+                        <strong>时间范围：</strong><span id="duration-preview-range">2026-01-01 ~ 2026-01-18</span>
+                    </div>
+                    <div class="gender-filter" style="margin-bottom: 12px;">
+                        <div class="gender-chip active" onclick="filterPreview('all')">全部(101)</div>
+                        <div class="gender-chip" onclick="filterPreview('male')">男(33)</div>
+                        <div class="gender-chip" onclick="filterPreview('female')">女(24)</div>
+                        <div class="gender-chip" onclick="filterPreview('inTable')">在表(57)</div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <strong>将导入：</strong><span id="duration-preview-count">57</span>条
+                    </div>
+                    <div class="preview-list" id="duration-preview-list">
+                        <!-- 预览数据将在这里显示 -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('duration-import-modal')">取消</button>
+                    <button class="btn btn-primary" onclick="confirmDurationImport()">导入 57 条</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导出选项对话框 -->
+        <div class="modal-overlay" id="export-modal">
+            <div class="modal">
+                <div class="modal-header">导出选项</div>
+                <div class="modal-content">
+                    <div style="margin-bottom: 16px;">
+                        <strong>导出字段：</strong>
+                        <div style="margin-top: 8px;">
+                            <label><input type="checkbox" checked> 排名</label><br>
+                            <label><input type="checkbox" checked> 主播名称</label><br>
+                            <label><input type="checkbox" checked> 主播ID</label><br>
+                            <label><input type="checkbox" checked> 日音浪</label><br>
+                            <label><input type="checkbox" checked> 总音浪</label><br>
+                            <label><input type="checkbox" checked> 等级</label><br>
+                            <label><input type="checkbox" checked> 跌幅</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('export-modal')">取消</button>
+                    <button class="btn btn-primary" onclick="confirmExport()">导出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据源
+        const streamers = [
+            { id: '699770243135796', name: '狼兴', sound: 746045, duration: '128小时49分钟', status: 'off', grade: 'S', gender: 'male' },
+            { id: '3261588504846025', name: '狼俊', sound: 665894, duration: '116小时13分钟', status: 'live', grade: 'A', gender: 'male' },
+            { id: '1110932522276664', name: '狼宝', sound: 487234, duration: '107小时56分钟', status: 'off', grade: 'B', gender: 'male' },
+            { id: '2345678901234567', name: '小甜甜', sound: 124000, duration: '82小时26分钟', status: 'live', grade: 'A', gender: 'female' },
+            { id: '3456789012345678', name: '阿强', sound: 9800, duration: '41小时10分钟', status: 'live', grade: 'C', gender: 'male' },
+            { id: '4567890123456789', name: '新人王', sound: 0, duration: '0小时0分钟', status: 'off', grade: 'D', gender: 'male' },
+        ];
+
+        let currentMode = 'sound'; // 'sound' or 'duration'
+        let currentGenderFilter = 'all'; // 'all', 'male', 'female'
+        let fabMenuOpen = false;
+        let currentScreen = 'main'; // 'main', 'duration', 'streamer', 'settings'
+
+        // 格式化数字
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // 渲染音浪列表
+        function renderSoundList() {
+            const listContainer = document.getElementById('streamer-list');
+            listContainer.innerHTML = '';
+            
+            const sortedData = [...streamers].sort((a, b) => b.sound - a.sound);
+
+            sortedData.forEach((item, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                let icon = '';
+                
+                if (rank === 1) { rankClass = 'rank-1'; icon = '<i class="fas fa-trophy"></i>'; }
+                else if (rank === 2) { rankClass = 'rank-2'; icon = '<i class="fas fa-medal"></i>'; }
+                else if (rank === 3) { rankClass = 'rank-3'; icon = '<i class="fas fa-medal"></i>'; }
+                else { icon = rank; }
+
+                const mainMetric = item.sound > 0 ? formatNumber(item.sound) : '<span style="color:#9ca3af">未开播</span>';
+                const subMetric = item.sound > 0 ? '音浪' : '';
+                const statusClass = item.status === 'live' ? 'status-live' : 'status-off';
+
+                const cardHTML = `
+                    <div class="streamer-card">
+                        <div class="rank ${rankClass}">${icon}</div>
+                        <div class="info">
+                            <div class="name">
+                                ${item.name} 
+                                <span class="status-dot ${statusClass}"></span>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-main">${mainMetric}</div>
+                            <div class="metric-sub">${subMetric}</div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += cardHTML;
+            });
+        }
+
+        // 渲染时长列表
+        function renderDurationList() {
+            const listContainer = document.getElementById('duration-list');
+            listContainer.innerHTML = '';
+            
+            // 根据性别筛选
+            let filteredData = streamers;
+            if (currentGenderFilter === 'male') {
+                filteredData = streamers.filter(s => s.gender === 'male');
+            } else if (currentGenderFilter === 'female') {
+                filteredData = streamers.filter(s => s.gender === 'female');
+            }
+            
+            // 按时长排序（简单的字符串比较，实际应该解析时间）
+            const sortedData = [...filteredData].sort((a, b) => {
+                const aDuration = parseDuration(a.duration);
+                const bDuration = parseDuration(b.duration);
+                return bDuration - aDuration;
+            });
+
+            sortedData.forEach((item, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                let icon = '';
+                
+                if (rank === 1) { rankClass = 'rank-1'; icon = '<i class="fas fa-trophy"></i>'; }
+                else if (rank === 2) { rankClass = 'rank-2'; icon = '<i class="fas fa-medal"></i>'; }
+                else if (rank === 3) { rankClass = 'rank-3'; icon = '<i class="fas fa-medal"></i>'; }
+                else { icon = rank; }
+
+                const mainMetric = item.duration !== '0小时0分钟' ? item.duration : '<span style="color:#ef4444">缺勤</span>';
+                const genderText = item.gender === 'male' ? '男' : '女';
+
+                const cardHTML = `
+                    <div class="streamer-card">
+                        <div class="rank ${rankClass}">${icon}</div>
+                        <div class="info">
+                            <div class="name">${item.name}</div>
+                            <div class="id-tag">${genderText}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-main">${mainMetric}</div>
+                            <div class="metric-sub">有效时长</div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += cardHTML;
+            });
+        }
+
+        // 解析时长为分钟数（用于排序）
+        function parseDuration(duration) {
+            const match = duration.match(/(\d+)小时(\d+)分钟/);
+            if (!match) return 0;
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+
+        // 切换模式
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+
+            const appContainer = document.getElementById('app');
+            if (mode === 'duration') {
+                appContainer.classList.add('mode-duration');
+                document.getElementById('col-header-right').innerText = '有效时长';
+                renderDurationList();
+            } else {
+                appContainer.classList.remove('mode-duration');
+                document.getElementById('col-header-right').innerText = '音浪收入';
+                renderSoundList();
+            }
+        }
+
+        // 性别筛选
+        function filterGender(gender) {
+            currentGenderFilter = gender;
+            
+            document.querySelectorAll('.gender-filter .gender-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderDurationList();
+        }
+
+        // 切换FAB菜单
+        function toggleFabMenu() {
+            fabMenuOpen = !fabMenuOpen;
+            const fabMenu = document.getElementById('fab-menu');
+            const fabMain = fabMenu.querySelector('.fab-main');
+            
+            if (fabMenuOpen) {
+                fabMenu.classList.add('open');
+                fabMain.classList.add('open');
+            } else {
+                fabMenu.classList.remove('open');
+                fabMain.classList.remove('open');
+            }
+        }
+
+        // 显示屏幕
+        function showScreen(screen) {
+            // 隐藏所有屏幕
+            document.getElementById('main-screen').classList.add('hidden');
+            document.getElementById('duration-screen').classList.add('hidden');
+            document.getElementById('streamer-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.add('hidden');
+            
+            // 显示目标屏幕
+            currentScreen = screen;
+            if (screen === 'main') {
+                document.getElementById('main-screen').classList.remove('hidden');
+                document.getElementById('app').classList.remove('mode-duration');
+            } else if (screen === 'duration') {
+                document.getElementById('duration-screen').classList.remove('hidden');
+                document.getElementById('app').classList.add('mode-duration');
+                renderDurationList();
+            } else if (screen === 'streamer') {
+                document.getElementById('streamer-screen').classList.remove('hidden');
+                renderStreamerManagement();
+            } else if (screen === 'settings') {
+                document.getElementById('settings-screen').classList.remove('hidden');
+            }
+            
+            // 更新底部导航高亮状态
+            updateBottomNav(screen);
+        }
+        
+        // 更新底部导航栏状态
+        function updateBottomNav(screen) {
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 根据屏幕设置对应的导航项为激活状态
+            const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+            if (screen === 'main') {
+                navItems[0].classList.add('active');
+            } else if (screen === 'streamer') {
+                navItems[1].classList.add('active');
+            } else if (screen === 'settings') {
+                navItems[3].classList.add('active');
+            }
+        }
+
+        // 渲染主播管理列表
+        function renderStreamerManagement() {
+            const listContainer = document.getElementById('streamer-management-list');
+            listContainer.innerHTML = '';
+            
+            streamers.forEach(item => {
+                const cardHTML = `
+                    <div class="streamer-card">
+                        <div class="info">
+                            <div class="name">${item.name}</div>
+                            <div class="id-tag">ID: ${item.id} | 性别: ${item.gender === 'male' ? '男' : '女'}</div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <div class="header-icon" onclick="editStreamer('${item.id}')">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="header-icon" onclick="deleteStreamer('${item.id}')">
+                                <i class="fas fa-trash"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += cardHTML;
+            });
+        }
+
+        // 功能函数
+        function showDatePicker() {
+            alert('打开日期选择器\n选择要查看的日期');
+        }
+
+        function showDateRangePicker() {
+            alert('打开日期范围选择器\n选择开始日期和结束日期');
+        }
+
+        function importData() {
+            toggleFabMenu();
+            alert('触发：选择CSV文件导入\n1. 选择日期\n2. 选择CSV文件\n3. 预览数据\n4. 确认导入');
+            showModal('import-preview-modal');
+        }
+
+        function importDurationData() {
+            alert('触发：导入直播时长数据\n1. 选择CSV文件\n2. 选择日期范围\n3. 预览并筛选性别\n4. 确认导入');
+            showModal('duration-import-modal');
+        }
+
+        function refreshData() {
+            toggleFabMenu();
+            alert('触发：刷新当前数据\n重新加载数据库数据');
+            renderSoundList();
+        }
+
+        function showExportDialog() {
+            toggleFabMenu();
+            showModal('export-modal');
+        }
+
+        function syncData() {
+            alert('触发：同步远程数据库\n将本地数据同步到远程MySQL数据库');
+        }
+
+        function syncStreamers() {
+            alert('触发：同步主播名单\n从远程数据库同步主播信息');
+        }
+
+        function makeCall() {
+            alert('触发：拨打电话\ntel:13354463148');
+        }
+
+        function addStreamer() {
+            alert('触发：添加主播\n填写主播ID、昵称、性别');
+        }
+
+        function editStreamer(id) {
+            alert(`触发：编辑主播 ${id}\n修改主播信息`);
+        }
+
+        function deleteStreamer(id) {
+            if (confirm(`确认删除主播 ${id}？`)) {
+                alert(`已删除主播 ${id}`);
+            }
+        }
+
+        function deleteDate() {
+            const date = prompt('请输入要删除的日期（格式：YYYY-MM-DD）：');
+            if (date) {
+                alert(`触发：删除日期 ${date} 的所有数据`);
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('确认清空所有本地数据？此操作不可恢复！')) {
+                alert('触发：清空所有本地数据库数据');
+            }
+        }
+
+        // 模态对话框控制
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function confirmImport() {
+            alert('触发：确认导入音浪数据\n1. 导入到本地数据库\n2. 自动上传到远程数据库\n3. 切换到导入日期');
+            closeModal('import-preview-modal');
+        }
+
+        function confirmDurationImport() {
+            alert('触发：确认导入时长数据\n根据选择的性别筛选导入数据');
+            closeModal('duration-import-modal');
+        }
+
+        function confirmExport() {
+            alert('触发：导出报表图片\n生成PNG图片保存到相册"鹏仔数据"文件夹');
+            closeModal('export-modal');
+        }
+
+        function filterPreview(type) {
+            document.querySelectorAll('#duration-import-modal .gender-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新导入数量
+            const counts = { all: 101, male: 33, female: 24, inTable: 57 };
+            document.getElementById('duration-preview-count').textContent = counts[type];
+            document.querySelector('#duration-import-modal .btn-primary').textContent = `导入 ${counts[type]} 条`;
+        }
+
+        // 初始化
+        renderSoundList();
+
+    </script>
+</body>
+</html>

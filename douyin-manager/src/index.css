@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background-color: #0F172A;
+  color: #F1F5F9;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1E293B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* 未授权时显示乱码效果 */
+.garbled-mode {
+  position: relative;
+}
+
+.garbled-mode * {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.garbled-mode *:not(input):not(textarea):not(button)::after {
+  content: '锟斤拷烫烫烫屯屯屯锘寱锘膥鍜灞辩浔鏌氶悧鍫楠灏鎾炽倱閸忋儰銈囬弻鈥灞閸忋儰銈囬弻鈥锟斤拷烫烫烫屯屯屯锘寱锘膥鍜灞辩浔鏌氶悧鍫楠灏鎾炽倱閸忋儰銈囬弻鈥灞閸忋儰銈囬弻鈥锟斤拷烫烫烫屯屯屯锘寱锘膥鍜灞辩浔鏌氶悧鍫楠灏鎾炽倱閸忋儰銈囬弻鈥灞閸忋儰銈囬弻鈥';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  color: #94a3b8 !important;
+  font-size: inherit;
+  line-height: inherit;
+  overflow: hidden;
+  word-break: break-all;
+  pointer-events: none;
+  animation: garbled-flicker 0.1s infinite;
+}
+
+@keyframes garbled-flicker {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.garbled-mode input,
+.garbled-mode textarea,
+.garbled-mode button {
+  background: rgba(100, 116, 139, 0.2) !important;
+  border-color: rgba(100, 116, 139, 0.3) !important;
+}
+
+.garbled-mode input::placeholder,
+.garbled-mode textarea::placeholder {
+  color: transparent !important;
+}

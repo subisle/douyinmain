@@ -1,0 +1,11 @@
+{
+  "name": "pzz-database-scripts",
+  "version": "1.0.0",
+  "description": "Database scripts for PZZ Android app",
+  "scripts": {
+    "create-duration-table": "node scripts/create-duration-table.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.16.1"
+  }
+}
