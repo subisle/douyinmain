@@ -187,6 +187,7 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
       setToast({ message: `成功导入 ${selectedData.length} 位主播！正在同步到数据库...`, type: 'success' })
       setTimeout(() => {
         onSuccess()
+        onClose() // 批量导入完成后关闭窗口
       }, 1500)
     } catch (err: any) {
       setError('导入失败: ' + err.message)
@@ -205,6 +206,24 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
     setPreviewData(newData)
   }
 
+  // 全选功能 - 只选择不存在的主播
+  const handleSelectAll = () => {
+    const newData = previewData.map(row => ({
+      ...row,
+      selected: !row.matched // 只选择不存在的主播
+    }))
+    setPreviewData(newData)
+  }
+
+  // 取消全选功能
+  const handleUnselectAll = () => {
+    const newData = previewData.map(row => ({
+      ...row,
+      selected: false // 全部取消选择
+    }))
+    setPreviewData(newData)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background-light rounded-xl w-[1000px] max-h-[90vh] border border-slate-700 flex flex-col">
@@ -220,7 +239,7 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
           </button>
         </div>
 
-        <div className="p-6 flex-1 overflow-hidden">
+        <div className="p-6 flex-1 overflow-hidden flex flex-col min-h-0">
           {step === 'select' && (
             <div className="space-y-6 h-full flex flex-col">
               <div
@@ -242,14 +261,31 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
           )}
 
           {step === 'preview' && (
-            <div className="space-y-4 h-full flex flex-col">
-              {/* 统计信息 */}
+            <div className="space-y-4 flex flex-col flex-1 min-h-0">
+              {/* 统计信息和快捷操作 */}
               <div className="flex items-center justify-between flex-shrink-0">
-                <div className="space-y-1">
-                  <div className="text-text text-sm font-medium">共 {previewData.length} 条数据</div>
-                  <div className="text-text-muted text-xs flex gap-4">
-                    <span>已存在 {previewData.filter(r => r.matched).length} 位</span>
-                    <span>可新增 {previewData.filter(r => !r.matched && r.selected).length} 位</span>
+                <div className="flex items-center gap-4">
+                  {/* 快捷操作按钮 */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSelectAll}
+                      className="px-3 py-1 bg-primary hover:bg-primary-light rounded text-xs text-white transition-colors"
+                    >
+                      全选
+                    </button>
+                    <button
+                      onClick={handleUnselectAll}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded text-xs text-text transition-colors"
+                    >
+                      取消全选
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-text text-sm font-medium">共 {previewData.length} 条数据</div>
+                    <div className="text-text-muted text-xs flex gap-4">
+                      <span>已存在 {previewData.filter(r => r.matched).length} 位</span>
+                      <span>可新增 {previewData.filter(r => !r.matched && r.selected).length} 位</span>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right text-sm text-text-muted">
@@ -258,8 +294,8 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
               </div>
 
               {/* 数据预览表格 */}
-              <div className="border border-slate-700 rounded-lg overflow-hidden flex-1 flex flex-col">
-                <div className="overflow-auto flex-1">
+              <div className="border border-slate-700 rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
+                <div className="overflow-auto flex-1 min-h-0">
                   <table className="w-full">
                     <thead className="bg-slate-800/50 sticky top-0 z-10">
                       <tr className="text-left text-text-muted text-sm">
@@ -270,59 +306,116 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
                         <th className="px-4 py-3 font-medium whitespace-nowrap">状态</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {previewData.map((row, index) => (
-                        <tr 
-                          key={index} 
-                          className={`border-t border-slate-700/50 ${row.matched ? 'bg-red-500/10' : 'hover:bg-slate-800/30'} transition-colors`}
-                        >
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            {!row.matched && (
-                              <input
-                                type="checkbox"
-                                checked={row.selected}
-                                onChange={(e) => handleRowSelectionChange(index, e.target.checked)}
-                                className="w-4 h-4 text-primary rounded focus:ring-primary"
-                              />
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-text-muted font-mono text-sm whitespace-nowrap">{row.anchor_id}</td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            {row.matched ? (
-                              <span className="text-red-400 line-through">{row.anchor_name}</span>
-                            ) : (
-                              <input
-                                type="text"
-                                value={row.modified_name || row.anchor_name}
-                                onChange={(e) => handleNameChange(index, e.target.value)}
-                                className="w-full px-2 py-1 bg-background border border-slate-600 rounded text-text focus:outline-none focus:border-primary text-sm"
-                                placeholder="请输入主播姓名"
-                              />
-                            )}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                  <tbody>
+                    {previewData.map((row, index) => (
+                      <tr 
+                        key={index} 
+                        className={`border-t border-slate-700/50 ${row.matched ? 'bg-red-500/10' : 'hover:bg-slate-800/30'} transition-colors`}
+                      >
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {!row.matched && (
+                            <input
+                              type="checkbox"
+                              checked={row.selected}
+                              onChange={(e) => handleRowSelectionChange(index, e.target.checked)}
+                              className="w-4 h-4 text-primary rounded focus:ring-primary"
+                            />
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-text-muted font-mono text-sm whitespace-nowrap">{row.anchor_id}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {row.matched ? (
+                            <span className="text-red-400 line-through">{row.anchor_name}</span>
+                          ) : (
+                            <input
+                              type="text"
+                              value={row.modified_name || row.anchor_name}
+                              onChange={(e) => handleNameChange(index, e.target.value)}
+                              className="w-full px-2 py-1 bg-background border border-slate-600 rounded text-text focus:outline-none focus:border-primary text-sm"
+                              placeholder="请输入主播姓名"
+                            />
+                          )}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {!row.matched ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  const newData = [...previewData];
+                                  newData[index].gender = newData[index].gender === 'male' ? 'female' : 'male';
+                                  setPreviewData(newData);
+                                }}
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                  row.gender === 'female' 
+                                    ? 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30' 
+                                    : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                                }`}
+                              >
+                                {row.gender === 'female' ? '女' : '男'}
+                              </button>
+                            </div>
+                          ) : (
                             <span className={`px-2 py-1 rounded text-xs ${
                               row.gender === 'female' ? 'bg-pink-500/20 text-pink-400' : 'bg-blue-500/20 text-blue-400'
                             }`}>
                               {row.gender === 'female' ? '女' : '男'}
                             </span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            {row.matched ? (
-                              <span className="text-red-400 text-xs">已存在</span>
-                            ) : (
+                          )}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {row.matched ? (
+                            <span className="text-red-400 text-xs">已存在</span>
+                          ) : (
+                            <div className="flex items-center gap-1">
                               <span className="text-green-400 text-xs">可添加</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    // 单独导入这一行的数据
+                                    const serialNumberResult = await window.electronAPI.getNextSerialNumber();
+                                    const serialNumber = serialNumberResult.data || 1;
+                                    
+                                    const anchorData = {
+                                      anchor_id: row.anchor_id,
+                                      anchor_name: row.modified_name || row.anchor_name,
+                                      serial_number: serialNumber,
+                                      gender: row.gender
+                                    };
+
+                                    const result = await window.electronAPI.addAnchor(anchorData);
+                                    if (result.success) {
+                                      // 更新这一行的状态为已存在
+                                      const newData = [...previewData];
+                                      newData[index].matched = true;
+                                      newData[index].selected = false;
+                                      setPreviewData(newData);
+                                      // 显示成功提示，但不关闭窗口
+                                      setToast({ message: `成功导入主播: ${row.anchor_name}`, type: 'success' });
+                                      // 刷新主播列表
+                                      onSuccess();
+                                    } else {
+                                      throw new Error(result.error || '导入失败');
+                                    }
+                                  } catch (err) {
+                                    setToast({ message: `导入失败: ${err}`, type: 'error' });
+                                  }
+                                }}
+                                className="px-2 py-0.5 bg-green-600 hover:bg-green-500 rounded text-xs text-white transition-colors"
+                              >
+                                导入
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                   </table>
                 </div>
               </div>
 
               {/* 说明文字 */}
-              <div className="text-xs text-text-muted space-y-1">
+              <div className="text-xs text-text-muted space-y-1 flex-shrink-0">
                 <p>• 红色背景的主播已存在于主播列表中，无法选择</p>
                 <p>• 可以手动修改主播姓名</p>
                 <p>• 只能选择不存在的主播进行导入</p>
@@ -331,7 +424,7 @@ function AnchorImportModal({ anchors, onClose, onSuccess }: AnchorImportModalPro
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm whitespace-pre-line">
+            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm whitespace-pre-line flex-shrink-0">
               {error}
             </div>
           )}

@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import log from 'electron-log'
-import { initDatabases, syncAllData, getAnchors, addWaveStats, addDurationStats, getWaveStats, getDurationStats, addAnchor, updateAnchor, deleteAnchor, getNextSerialNumber, clearStatsData, checkAuthorization } from './database'
+import { initDatabases, syncAllData, syncAnchors, getAnchors, addWaveStats, addDurationStats, getWaveStats, getDurationStats, addAnchor, updateAnchor, deleteAnchor, getNextSerialNumber, clearStatsData, checkAuthorization } from './database'
 
 // Configure logging
 log.transports.file.level = 'info'
@@ -136,6 +136,16 @@ ipcMain.handle('db:syncAllData', async () => {
     return { success: true, data: result }
   } catch (error) {
     log.error('Sync all data error:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('db:syncAnchors', async () => {
+  try {
+    await syncAnchors()
+    return { success: true }
+  } catch (error) {
+    log.error('Sync anchors error:', error)
     return { success: false, error: String(error) }
   }
 })

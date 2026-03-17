@@ -9,6 +9,7 @@ export interface ElectronAPI {
   getExtName: (path: string) => Promise<string>
   joinPath: (...paths: string[]) => Promise<string>
   syncAnchors: () => Promise<{ success: boolean; error?: string }>
+  syncAnchorOnly: () => Promise<{ success: boolean; error?: string }>
   getAnchors: () => Promise<{ success: boolean; data?: any[]; error?: string }>
   getNextSerialNumber: () => Promise<{ success: boolean; data?: number; error?: string }>
   addAnchor: (data: any) => Promise<{ success: boolean; error?: string }>

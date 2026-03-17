@@ -495,7 +495,53 @@ export async function getDurationStats(filters?: StatsFilters) {
 export type ClearDataType = 'local' | 'remote' | 'both'
 
 export async function checkAuthorization(): Promise<{ authorized: boolean; error?: string }> {
-  return { authorized: true }
+  // 尝试创建一个新的连接来检查授权，而不依赖于已初始化的连接池
+  try {
+    const tempPool = mysql.createPool(remoteConfig);
+    // 测试连接
+    await tempPool.query('SELECT 1');
+    
+    try {
+      // 从远程数据库的shouquan表查询第一个记录的shouquan字段
+      const [rows] = await tempPool.query<any[]>('SELECT shouquan FROM shouquan LIMIT 1');
+      if (rows.length > 0) {
+        const authValue = rows[0].shouquan;
+        // 检查授权值是否等于1
+        if (authValue == 1) {
+          await tempPool.end(); // 关闭临时连接
+          return { authorized: true };
+        } else {
+          await tempPool.end(); // 关闭临时连接
+          return { authorized: false, error: `授权验证失败: shouquan值为${authValue}，需要为1` };
+        }
+      } else {
+        await tempPool.end(); // 关闭临时连接
+        return { authorized: false, error: '未找到授权信息' };
+      }
+    } catch (shouquanError) {
+      // 如果shouquan表不存在，也检查user表作为备选
+      try {
+        const [rows] = await tempPool.query<any[]>('SELECT shouquan FROM user LIMIT 1');
+        if (rows.length > 0) {
+          const authValue = rows[0].shouquan;
+          await tempPool.end(); // 关闭临时连接
+          if (authValue == 1) {
+            return { authorized: true };
+          } else {
+            return { authorized: false, error: `授权验证失败: shouquan值为${authValue}，需要为1` };
+          }
+        } else {
+          await tempPool.end(); // 关闭临时连接
+          return { authorized: false, error: '未找到授权信息' };
+        }
+      } catch (userError) {
+        await tempPool.end(); // 关闭临时连接
+        return { authorized: false, error: `授权检查失败: ${String(shouquanError)}` };
+      }
+    }
+  } catch (connectionError) {
+    return { authorized: false, error: `远程数据库连接失败: ${String(connectionError)}` };
+  }
 }
 
 export async function clearStatsData(type: ClearDataType) {

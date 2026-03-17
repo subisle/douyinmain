@@ -7,6 +7,7 @@ interface AnchorListProps {
   durationStats: DurationStat[]
   onEdit: (anchor: Anchor) => void
   onDelete: (anchor: Anchor) => void
+  onImportSingle: (anchor: Anchor) => void // 添加单个导入功能
   searchTerm: string
 }
 
@@ -23,7 +24,7 @@ const formatDateStr = (date: Date | string | undefined): string => {
   return String(date)
 }
 
-function AnchorList({ anchors, waveStats, durationStats, onEdit, onDelete, searchTerm }: AnchorListProps) {
+function AnchorList({ anchors, waveStats, durationStats, onEdit, onDelete, onImportSingle, searchTerm }: AnchorListProps) {
   const [showSyncHint, setShowSyncHint] = useState(false)
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('all')
 
@@ -236,9 +237,54 @@ function AnchorList({ anchors, waveStats, durationStats, onEdit, onDelete, searc
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => onImportSingle(anchor)}
+                          className="p-1.5 hover:bg-slate-700 rounded transition-colors text-text-muted hover:text-green-400"
+                          title="导入数据"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </button>
+                        <button
                           onClick={() => onEdit(anchor)}
                           className="p-1.5 hover:bg-slate-700 rounded transition-colors text-text-muted hover:text-primary"
                           title="编辑"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path str
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => onDelete(anchor)}
+                          className="p-1.5 hover:bg-slate-700 rounded transition-colors text-text-muted hover:text-red-400"
+                          title="删除"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+              {filteredAnchors.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
+                    {searchTerm ? '未找到匹配的主播' : '暂无主播数据，请先同步主播信息或添加主播'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="text-sm text-text-muted">
+        共 {filteredAnchors.length} 位主播
+      </div>
+    </div>
+  )
+}
+
+export default AnchorList

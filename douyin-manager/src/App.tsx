@@ -78,7 +78,7 @@ function App() {
   const syncAnchors = useCallback(withErrorHandling(async () => {
     setLoading(true)
     try {
-      const result = await window.electronAPI.syncAnchors()
+      const result = await window.electronAPI.syncAnchorOnly()
       if (result.success) {
         await loadAnchors()
         showSuccess('主播同步成功')
@@ -171,6 +171,20 @@ function App() {
     loadTodayStats()
     loadStats()
     loadAllStats()
+    
+    // 程序启动时自动同步主播数据
+    const autoSyncAnchors = async () => {
+      try {
+        const result = await window.electronAPI.syncAnchorOnly()
+        if (result.success) {
+          await loadAnchors() // 重新加载主播列表以反映同步结果
+        }
+      } catch (error) {
+        console.error('Auto sync anchors failed:', error)
+      }
+    }
+    
+    autoSyncAnchors()
   }, []) // 空依赖，只加载一次
 
   const handleImport = (type: 'wave' | 'duration') => {
@@ -229,6 +243,13 @@ function App() {
     }
   }
 
+  // 单个主播导入功能
+  const handleImportSingle = async (anchor: Anchor) => {
+    // 这里可以打开特定的导入模态框或执行导入逻辑
+    // 暂时显示一个提示
+    alert(`准备导入主播: ${anchor.anchor_name || anchor.anchor_id}\n您可以在此处添加具体的导入逻辑`);
+  }
+
   const handleAnchorModalSuccess = async () => {
     setShowAnchorModal(false)
     setEditingAnchor(null)
@@ -278,8 +299,14 @@ function App() {
         onTimeRangeChange={handleTimeRangeChange}
         onCustomDateChange={setCustomDateRange}
         anchors={anchors}
-        waveStats={waveStats}
-        durationStats={durationStats}
+      waveStats={waveStats.map(stat => ({
+        ...stat,
+        date: typeof stat.date === 'string' ? stat.date : stat.date.toISOString().split('T')[0]
+      }))}
+      durationStats={durationStats.map(stat => ({
+        ...stat,
+        date: typeof stat.date === 'string' ? stat.date : stat.date.toISOString().split('T')[0]
+      }))}
         selectedAnchorIds={selectedAnchorIds}
         onAnchorSelectionChange={setSelectedAnchorIds}
         anchorListSearchTerm={anchorSearchTerm}
@@ -288,6 +315,7 @@ function App() {
         onImportAnchors={handleImportAnchors}
         selectedYearMonth={selectedYearMonth}
         onYearMonthChange={setSelectedYearMonth}
+        onExport={handleExport}
       />
 
       <div className="flex">
@@ -329,6 +357,7 @@ function App() {
               durationStats={durationStats}
               onEdit={handleEditAnchor}
               onDelete={handleDeleteAnchor}
+              onImportSingle={handleImportSingle}
               searchTerm={anchorSearchTerm}
             />
           )}

@@ -11,6 +11,7 @@ export interface ElectronAPI {
   getExtName: (path: string) => Promise<string>
   joinPath: (...paths: string[]) => Promise<string>
   syncAnchors: () => Promise<{ success: boolean; data?: any; error?: string }>
+  syncAnchorOnly: () => Promise<{ success: boolean; data?: any; error?: string }>
   syncAllData: () => Promise<{ success: boolean; data?: any; error?: string }>
   getAnchors: () => Promise<{ success: boolean; data?: any[]; error?: string }>
   getNextSerialNumber: () => Promise<{ success: boolean; data?: number; error?: string }>
@@ -41,6 +42,7 @@ const api: ElectronAPI = {
   getExtName: (path) => ipcRenderer.invoke('path:extname', path),
   joinPath: (...paths) => ipcRenderer.invoke('path:join', ...paths),
   syncAnchors: () => ipcRenderer.invoke('db:syncAllData'),
+  syncAnchorOnly: () => ipcRenderer.invoke('db:syncAnchors'),
   syncAllData: () => ipcRenderer.invoke('db:syncAllData'),
   getAnchors: () => ipcRenderer.invoke('db:getAnchors'),
   getNextSerialNumber: () => ipcRenderer.invoke('db:getNextSerialNumber'),

@@ -11,8 +11,8 @@ interface HeaderProps {
   onTimeRangeChange: (range: TimeRange) => void
   onCustomDateChange: (range: { start: string; end: string }) => void
   anchors: Anchor[]
-  waveStats: { anchor_id: string; anchor_name?: string; date: Date | string }[]
-  durationStats: { anchor_id: string; anchor_name?: string; date: Date | string }[]
+  waveStats: { anchor_id: string; anchor_name?: string; date: string }[]
+  durationStats: { anchor_id: string; anchor_name?: string; date: string }[]
   selectedAnchorIds: string[]
   onAnchorSelectionChange: (ids: string[]) => void
   anchorListSearchTerm: string
@@ -21,6 +21,7 @@ interface HeaderProps {
   onImportAnchors: () => void
   selectedYearMonth: string
   onYearMonthChange: (ym: string) => void
+  onExport: (type: 'wave' | 'duration') => void
 }
 
 function Header({ 
@@ -389,4 +390,12 @@ function Header({
           title="关闭"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap=
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </header>
+  )
+}
+
+export default Header

@@ -329,44 +329,94 @@ function ImportModal({ type, anchors, dropFilePath, onClose, onSuccess, onImport
 
     try {
       if (type === 'wave') {
-        // 音浪导入：单个日期
-        const waveData = matchedData.map((row, index) => ({
-          anchor_id: row.anchor_id,
-          date: importDate,
-          wave_value: Number(row.value),
-          rank: index + 1
-        }))
+        // 音浪导入：支持单日和日期范围
+        let dates: string[] = []
+        
+        if (useDateRange && dateRange.start && dateRange.end) {
+          dates = generateDateRange(dateRange.start, dateRange.end)
+        } else {
+          dates = [importDate]
+        }
+
+        // 生成音浪数据：如果是单日导入，直接使用原始值；如果是范围导入，总量数据放到第一天
+        const waveData = []
+        for (const row of matchedData) {
+          if (dates.length === 1) {
+            // 单日导入：使用原始值
+            waveData.push({
+              anchor_id: row.anchor_id,
+              date: dates[0],
+              wave_value: Number(row.value),
+              rank: row.matched ? matchedData.findIndex(r => r.anchor_id === row.anchor_id) + 1 : 0
+            })
+          } else {
+            // 范围导入：总量数据放到第一天，后续日期保持0或被后续导入覆盖
+            waveData.push({
+              anchor_id: row.anchor_id,
+              date: dates[0], // 第一天放总量
+              wave_value: Number(row.value), // 总量数据
+              rank: row.matched ? matchedData.findIndex(r => r.anchor_id === row.anchor_id) + 1 : 0
+            })
+            // 其他日期不创建数据，让后续的单日导入可以独立存在
+          }
+        }
 
         const result = await window.electronAPI.addWaveStats(waveData)
         
         if (result && result.success) {
           // 如果同时有时长数据，也导入时长
-          // 时长是累计数据，直接存储到导入日期
           if (durationPreviewData.length > 0) {
-            // 计算日期范围：从当月1日到导入日期（用于显示信息）
-            const [year, month] = importDate.split('-')
-            const monthStart = `${year}-${month}-01`
-            const daysCount = generateDateRange(monthStart, importDate).length
+            // 时长数据处理：如果是单日导入，使用原始值；如果是范围导入，总量数据放到第一天
+            const durationDates = useDateRange && dateRange.start && dateRange.end ? generateDateRange(dateRange.start, dateRange.end) : [importDate]
+            const durationData = []
             
-            const durationData = durationPreviewData.map(row => {
-              const durationStr = String(row.value)
-              const hourMatch = durationStr.match(/(\d+)小时/)
-              const minMatch = durationStr.match(/(\d+)分钟/)
-              const secMatch = durationStr.match(/(\d+)秒/)
-              const hours = hourMatch ? parseInt(hourMatch[1]) : 0
-              const minutes = minMatch ? parseInt(minMatch[1]) : 0
-              const seconds = secMatch ? parseInt(secMatch[1]) : 0
-              return {
-                anchor_id: row.anchor_id,
-                date: importDate,
-                duration_minutes: hours * 60 + minutes + Math.round(seconds / 60)
+            for (const row of durationPreviewData) {
+              if (durationDates.length === 1) {
+                // 单日导入：使用原始时长值
+                const durationStr = String(row.value)
+                const hourMatch = durationStr.match(/(\d+)小时/)
+                const minMatch = durationStr.match(/(\d+)分钟/)
+                const secMatch = durationStr.match(/(\d+)秒/)
+                const hours = hourMatch ? parseInt(hourMatch[1]) : 0
+                const minutes = minMatch ? parseInt(minMatch[1]) : 0
+                const seconds = secMatch ? parseInt(secMatch[1]) : 0
+                const totalMinutes = hours * 60 + minutes + Math.round(seconds / 60)
+                
+                durationData.push({
+                  anchor_id: row.anchor_id,
+                  date: durationDates[0],
+                  duration_minutes: totalMinutes
+                })
+              } else {
+                // 范围导入：总量数据放到第一天
+                const durationStr = String(row.value)
+                const hourMatch = durationStr.match(/(\d+)小时/)
+                const minMatch = durationStr.match(/(\d+)分钟/)
+                const secMatch = durationStr.match(/(\d+)秒/)
+                const hours = hourMatch ? parseInt(hourMatch[1]) : 0
+                const minutes = minMatch ? parseInt(minMatch[1]) : 0
+                const seconds = secMatch ? parseInt(secMatch[1]) : 0
+                const totalMinutes = hours * 60 + minutes + Math.round(seconds / 60)
+                
+                durationData.push({
+                  anchor_id: row.anchor_id,
+                  date: durationDates[0], // 第一天放总量
+                  duration_minutes: totalMinutes // 总量数据
+                })
+                // 其他日期不创建数据，让后续的单日导入可以独立存在
               }
-            })
+            }
             
             await window.electronAPI.addDurationStats(durationData)
-            setToast({ message: `导入成功！已保存 ${matchedData.length} 条音浪数据和 ${durationData.length} 条时长数据（累计${daysCount}天），正在后台同步...`, type: 'success' })
+            const rangeText = useDateRange && dateRange.start && dateRange.end 
+              ? `（${dateRange.start} 至 ${dateRange.end} 共${dates.length}天）` 
+              : `（${importDate}）`
+            setToast({ message: `导入成功！已保存 ${waveData.length} 条音浪数据和 ${durationData.length} 条时长数据${rangeText}，正在后台同步...`, type: 'success' })
           } else {
-            setToast({ message: `导入成功！已保存 ${matchedData.length} 条数据到本地，正在后台同步...`, type: 'success' })
+            const rangeText = useDateRange && dateRange.start && dateRange.end 
+              ? `（${dateRange.start} 至 ${dateRange.end} 共${dates.length}天）` 
+              : `（${importDate}）`
+            setToast({ message: `导入成功！已保存 ${waveData.length} 条音浪数据${rangeText}，正在后台同步...`, type: 'success' })
           }
           setTimeout(() => {
             onSuccess()
@@ -477,150 +527,136 @@ function ImportModal({ type, anchors, dropFilePath, onClose, onSuccess, onImport
             <div className="space-y-4 h-full flex flex-col">
               {/* 日期选择区域 */}
               <div className="flex items-start gap-6 flex-shrink-0">
-                {type === 'wave' ? (
-                  // 音浪：单日期选择
-                  <div>
-                    <label className="block text-sm text-text-muted mb-1">导入日期</label>
-                    <input
-                      type="date"
-                      value={importDate}
-                      onChange={(e) => setImportDate(e.target.value)}
-                      className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
-                    />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={!useDateRange}
+                        onChange={() => { setUseDateRange(false); setQuickDateRange('none') }}
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-sm text-text">单日导入</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={useDateRange}
+                        onChange={() => setUseDateRange(true)}
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-sm text-text">日期范围导入</span>
+                    </label>
                   </div>
-                ) : (
-                  // 时长：支持日期范围
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          checked={!useDateRange}
-                          onChange={() => { setUseDateRange(false); setQuickDateRange('none') }}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="text-sm text-text">单日导入</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          checked={useDateRange}
-                          onChange={() => setUseDateRange(true)}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="text-sm text-text">日期范围导入</span>
-                      </label>
+                  
+                  {!useDateRange ? (
+                    <div>
+                      <label className="block text-sm text-text-muted mb-1">导入日期</label>
+                      <input
+                        type="date"
+                        value={importDate}
+                        onChange={(e) => setImportDate(e.target.value)}
+                        className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
+                      />
                     </div>
-                    
-                    {!useDateRange ? (
+                  ) : (
+                    <div className="space-y-3">
+                      {/* 快捷日期选择按钮 */}
                       <div>
-                        <label className="block text-sm text-text-muted mb-1">导入日期</label>
-                        <input
-                          type="date"
-                          value={importDate}
-                          onChange={(e) => setImportDate(e.target.value)}
-                          className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {/* 快捷日期选择按钮 */}
-                        <div>
-                          <label className="block text-sm text-text-muted mb-2">快捷选择</label>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => applyQuickDateRange('thisMonth')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'thisMonth'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              本月
-                            </button>
-                            <button
-                              onClick={() => applyQuickDateRange('firstHalf')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'firstHalf'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              上半月(1-15号)
-                            </button>
-                            <button
-                              onClick={() => applyQuickDateRange('secondHalf')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'secondHalf'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              下半月(16-月底)
-                            </button>
-                            <button
-                              onClick={() => applyQuickDateRange('lastMonth')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'lastMonth'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              上个月
-                            </button>
-                            <button
-                              onClick={() => applyQuickDateRange('last7Days')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'last7Days'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              最近7天
-                            </button>
-                            <button
-                              onClick={() => applyQuickDateRange('last15Days')}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                quickDateRange === 'last15Days'
-                                  ? 'bg-primary text-white'
-                                  : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
-                              }`}
-                            >
-                              最近15天
-                            </button>
-                          </div>
-                        </div>
-                        
-                        {/* 自定义日期范围 */}
-                        <div>
-                          <label className="block text-sm text-text-muted mb-1">自定义日期范围（时长将平均分配到每天）</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="date"
-                              value={dateRange.start}
-                              onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setQuickDateRange('none') }}
-                              className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
-                            />
-                            <span className="text-text-muted">至</span>
-                            <input
-                              type="date"
-                              value={dateRange.end}
-                              onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setQuickDateRange('none') }}
-                              className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
-                            />
-                          </div>
+                        <label className="block text-sm text-text-muted mb-2">快捷选择</label>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => applyQuickDateRange('thisMonth')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'thisMonth'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            本月
+                          </button>
+                          <button
+                            onClick={() => applyQuickDateRange('firstHalf')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'firstHalf'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            上半月(1-15号)
+                          </button>
+                          <button
+                            onClick={() => applyQuickDateRange('secondHalf')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'secondHalf'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            下半月(16-月底)
+                          </button>
+                          <button
+                            onClick={() => applyQuickDateRange('lastMonth')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'lastMonth'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            上个月
+                          </button>
+                          <button
+                            onClick={() => applyQuickDateRange('last7Days')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'last7Days'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            最近7天
+                          </button>
+                          <button
+                            onClick={() => applyQuickDateRange('last15Days')}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                              quickDateRange === 'last15Days'
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-700 text-text-muted hover:text-text hover:bg-slate-600'
+                            }`}
+                          >
+                            最近15天
+                          </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
+                      
+                      {/* 自定义日期范围 */}
+                      <div>
+                        <label className="block text-sm text-text-muted mb-1">自定义日期范围（数据将平均分配到每天）</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setQuickDateRange('none') }}
+                            className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
+                          />
+                          <span className="text-text-muted">至</span>
+                          <input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setQuickDateRange('none') }}
+                            className="px-4 py-2 bg-background border border-slate-700 rounded-lg text-text focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* 统计信息 */}
                 <div className="flex-1 text-right space-y-1">
                   <div className="text-text-muted text-sm">
-                    共 <span className="text-green-400 font-medium">{previewData.length}</span> 条音浪数据
+                    共 <span className="text-green-400 font-medium">{previewData.length}</span> 条{type === 'wave' ? '音浪' : '时长'}数据
                   </div>
-                  {durationPreviewData.length > 0 && (
+                  {durationPreviewData.length > 0 && type === 'wave' && (
                     <div className="text-text-muted text-sm">
                       同时将导入 <span className="text-blue-400 font-medium">{durationPreviewData.length}</span> 条时长数据
                     </div>
