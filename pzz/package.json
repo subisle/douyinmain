@@ -2,6 +2,7 @@
   "name": "pzz-database-scripts",
   "version": "1.0.0",
   "description": "Database scripts for PZZ Android app",
+  "license": "MIT",
   "scripts": {
     "create-duration-table": "node scripts/create-duration-table.js"
   },

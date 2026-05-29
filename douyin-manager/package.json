@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "主播数据管理系统",
   "author": "OpenClaw",
+  "license": "MIT",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --host",
