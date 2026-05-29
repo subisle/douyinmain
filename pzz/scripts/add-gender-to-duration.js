@@ -5,11 +5,11 @@
 const mysql = require('mysql2/promise');
 
 const config = {
-  host: 'your_mysql_host',
-  port: 3310,
-  user: 'your_username',
-  password: 'your_password',
-  database: 'your_username'
+  host: process.env.DB_HOST || 'your_mysql_host',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER || 'your_username',
+  password: process.env.DB_PASSWORD || 'your_password',
+  database: process.env.DB_NAME || 'your_database'
 };
 
 async function addGenderColumn() {
@@ -24,7 +24,7 @@ async function addGenderColumn() {
     const [columns] = await connection.query(`
       SELECT COLUMN_NAME 
       FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = 'your_username' 
+      WHERE TABLE_SCHEMA = 'your_database'
         AND TABLE_NAME = 'duration_data' 
         AND COLUMN_NAME = 'gender'
     `);

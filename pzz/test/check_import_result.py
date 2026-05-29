@@ -5,17 +5,18 @@
 """
 
 import mysql.connector
+import os
 from datetime import datetime
 
 def check_import_result(target_date='2026-01-18'):
     """检查指定日期的导入结果"""
     try:
         conn = mysql.connector.connect(
-            host='your_mysql_host',
-            port=3306,
-            user='pzz',
-            password='your_password',
-            database='pzz'
+            host=os.getenv('DB_HOST', 'your_mysql_host'),
+            port=int(os.getenv('DB_PORT', '3306')),
+            user=os.getenv('DB_USER', 'your_username'),
+            password=os.getenv('DB_PASSWORD', 'your_password'),
+            database=os.getenv('DB_NAME', 'your_database')
         )
         
         cursor = conn.cursor()

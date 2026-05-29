@@ -12,7 +12,7 @@ DB_CONFIG = {
     'port': 3310,
     'user': 'your_username',
     'password': 'your_password',
-    'database': 'your_username'
+    'database': 'your_database'
 }
 
 def check_tables():
@@ -29,7 +29,7 @@ def check_tables():
         cursor.execute("SHOW TABLES")
         tables = cursor.fetchall()
         
-        print(f"\n数据库 'your_username' 中的表 ({len(tables)}个):\n")
+        print(f"\n数据库 'your_database' 中的表 ({len(tables)}个):\n")
         for table in tables:
             print(f"  - {table[0]}")
         

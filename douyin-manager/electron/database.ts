@@ -6,12 +6,13 @@ import path from 'path'
 import fs from 'fs'
 
 // Remote database - MySQL
+// 公开仓库只保留占位默认值，真实连接信息通过本地环境变量注入。
 const remoteConfig = {
-  host: 'your_mysql_host',
-  port: 3310,
-  user: 'your_username',
-  password: 'your_password',
-  database: 'your_username'
+  host: process.env.DB_HOST || 'your_mysql_host',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER || 'your_username',
+  password: process.env.DB_PASSWORD || 'your_password',
+  database: process.env.DB_NAME || 'your_database'
 }
 
 let remotePool: mysql.Pool | null = null

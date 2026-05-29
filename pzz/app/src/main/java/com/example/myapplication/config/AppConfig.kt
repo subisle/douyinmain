@@ -19,11 +19,11 @@ object AppConfig {
      */
     
     // 数据库连接信息
-    const val DB_HOST = "your_mysql_host"   // 远程数据库地址
-    const val DB_PORT = 3310                   // 数据库端口
-    const val DB_NAME = "your_username"               // 数据库名称
-    const val DB_USER = "your_username"               // 数据库用户名
-    const val DB_PASSWORD = "your_password" // 数据库密码
+    const val DB_HOST = "your_mysql_host"      // 远程数据库地址
+    const val DB_PORT = 3306                   // 数据库端口
+    const val DB_NAME = "your_database"        // 数据库名称
+    const val DB_USER = "your_username"        // 数据库用户名
+    const val DB_PASSWORD = "your_password"    // 数据库密码
     const val DB_TABLE = "streamer_data"       // 表名（与Python项目一致）
     
     /**

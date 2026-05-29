@@ -13,7 +13,7 @@ DB_CONFIG = {
     'port': 3310,
     'user': 'your_username',
     'password': 'your_password',
-    'database': 'your_username',
+    'database': 'your_database',
     'charset': 'utf8mb4'
 }
 

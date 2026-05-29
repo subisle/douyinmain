@@ -7,13 +7,13 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-// 数据库配置（使用生产环境的远程数据库）
+// 数据库配置。真实连接信息通过本地环境变量注入，不写入公开仓库。
 const dbConfig = {
-  host: 'your_mysql_host',
-  port: 3306,
-  user: 'root',
-  password: 'your_password',
-  database: 'xs',
+  host: process.env.DB_HOST || 'your_mysql_host',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER || 'your_username',
+  password: process.env.DB_PASSWORD || 'your_password',
+  database: process.env.DB_NAME || 'your_database',
   charset: 'utf8mb4'
 };
 
